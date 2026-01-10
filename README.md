@@ -34,6 +34,6 @@ pytest -v --cov=. --cov-report=term-missing
 ## CI/CD
 
 This project uses GitHub Actions for continuous integration. The CI pipeline:
-- Runs tests on Python 3.9, 3.10, and 3.11
+- Runs tests on Python 3.11
 - Generates code coverage reports
 - Automatically runs on pushes and pull requests to main, master, and develop branches
