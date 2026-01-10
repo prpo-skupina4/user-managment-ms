@@ -1,6 +1,10 @@
 from sqlalchemy import String, Integer, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
-from app.db.base import Base
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 class User(Base):
     __tablename__ = "users"
