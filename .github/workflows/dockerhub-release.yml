@@ -28,6 +28,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/prpo-app-users:latest
