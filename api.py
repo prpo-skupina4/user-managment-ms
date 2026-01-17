@@ -34,7 +34,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(400, "User already exists")
 
-    new_user = User(id=user.userId, email=user.email, hashed_password=hash_password(user.password))
+    new_user = User(email=user.email, hashed_password=hash_password(user.password))
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

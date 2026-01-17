@@ -1,5 +1,5 @@
-from sqlalchemy import String, Integer, Boolean, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy import String, Integer, Boolean, ForeignKey, select
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, Session, object_session
 from pydantic import constr
 
 
@@ -14,6 +14,16 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    @property
+    def friends(self) -> list[int]:
+        """Get list of friend IDs for this user"""
+        session = object_session(self)
+        if session is None:
+            return []
+        from models import Friends
+        friend_records = session.query(Friends).filter(Friends.user_id == self.id).all()
+        return [f.friend_id for f in friend_records]
 
 class Friends(Base):
     __tablename__ = "friends"
