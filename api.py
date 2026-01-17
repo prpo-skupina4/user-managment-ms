@@ -85,7 +85,7 @@ def list_friends(user_id: int, skip: int = 0, limit: int = 10, db: Session = Dep
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(404)
+        raise HTTPException(404, "User not found")
     
     # Get total count for pagination metadata
     total = db.query(Friends).filter(Friends.user_id == user_id).count()
