@@ -17,6 +17,5 @@ class UserOut(BaseModel):
         from_attributes = True
 
 class FriendReq(BaseModel):
-    user_id: int
     friend_id: int
     name: str

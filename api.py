@@ -58,7 +58,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
 @router.post("/users/{user_id}/friends")
 def add_friend(user_id: int, rq:FriendReq, db: Session = Depends(get_db)):
-    # user_id comes from path parameter, override any value from request body
+    # user_id is taken from the path parameter; request body user_id is ignored
     friend_id = rq.friend_id
     name = rq.name
     user = db.query(User).filter(User.id == user_id).first()

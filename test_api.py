@@ -273,7 +273,6 @@ def test_add_friend(client):
     
     # Add friend
     friend_data = {
-        "user_id": 100,  # This will be ignored, path param takes precedence
         "friend_id": 101,
         "name": "Friend Name"
     }
@@ -288,7 +287,6 @@ def test_add_friend(client):
 def test_add_friend_nonexistent_user(client):
     """Test adding a friend with nonexistent user"""
     friend_data = {
-        "user_id": 999,
         "friend_id": 998,
         "name": "Friend Name"
     }
@@ -314,7 +312,6 @@ def test_add_duplicate_friend(client):
     
     # Add friend first time
     friend_data = {
-        "user_id": 200,
         "friend_id": 201,
         "name": "Friend Name"
     }
@@ -351,12 +348,10 @@ def test_list_friends(client):
     
     # Add friends
     client.post("/auth/users/300/friends", json={
-        "user_id": 300,
         "friend_id": 301,
         "name": "Friend 1"
     })
     client.post("/auth/users/300/friends", json={
-        "user_id": 300,
         "friend_id": 302,
         "name": "Friend 2"
     })
