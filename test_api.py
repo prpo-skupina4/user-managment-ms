@@ -56,6 +56,7 @@ def test_health_endpoint(client):
 def test_register_new_user(client):
     """Test registering a new user"""
     user_data = {
+        "userId": 1,
         "email": "test@example.com",
         "password": "testpassword123"
     }
@@ -69,6 +70,7 @@ def test_register_new_user(client):
 def test_register_duplicate_user(client):
     """Test that registering a duplicate user fails"""
     user_data = {
+        "userId": 2,
         "email": "duplicate@example.com",
         "password": "testpassword123"
     }
@@ -82,9 +84,32 @@ def test_register_duplicate_user(client):
     assert "already exists" in response2.json()["detail"].lower()
 
 
+def test_register_duplicate_user_id(client):
+    """Test that registering with a duplicate userId fails"""
+    # Register first user
+    user_data1 = {
+        "userId": 10,
+        "email": "user1@example.com",
+        "password": "testpassword123"
+    }
+    response1 = client.post("/auth/register", json=user_data1)
+    assert response1.status_code == 200
+    
+    # Try to register another user with same userId but different email
+    user_data2 = {
+        "userId": 10,
+        "email": "user2@example.com",
+        "password": "testpassword456"
+    }
+    response2 = client.post("/auth/register", json=user_data2)
+    assert response2.status_code == 400
+    assert "already exists" in response2.json()["detail"].lower()
+
+
 def test_register_invalid_email(client):
     """Test that registering with an invalid email fails"""
     user_data = {
+        "userId": 3,
         "email": "not-an-email",
         "password": "testpassword123"
     }
@@ -96,6 +121,7 @@ def test_login_success(client):
     """Test successful login"""
     # First register a user
     user_data = {
+        "userId": 4,
         "email": "login@example.com",
         "password": "testpassword123"
     }
@@ -117,6 +143,7 @@ def test_login_wrong_password(client):
     """Test login with wrong password"""
     # Register a user
     user_data = {
+        "userId": 5,
         "email": "wrongpw@example.com",
         "password": "correctpassword"
     }
@@ -146,6 +173,7 @@ def test_me_endpoint_with_valid_token(client):
     """Test /me endpoint with a valid token"""
     # Register and login
     user_data = {
+        "userId": 6,
         "email": "me@example.com",
         "password": "testpassword123"
     }
@@ -182,6 +210,7 @@ def test_get_user_by_id(client):
     """Test getting a user by ID"""
     # Register a user
     user_data = {
+        "userId": 7,
         "email": "getuser@example.com",
         "password": "testpassword123"
     }
@@ -211,6 +240,7 @@ def test_password_hashing(client):
     
     # Register a user
     user_data = {
+        "userId": 8,
         "email": "hash@example.com",
         "password": "mypassword123"
     }

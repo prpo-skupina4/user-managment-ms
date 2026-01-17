@@ -31,10 +31,15 @@ def health():
 
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    # Check if email already exists
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(400, "User already exists")
+    
+    # Check if userId already exists
+    if db.query(User).filter(User.id == user.userId).first():
+        raise HTTPException(400, "User ID already exists")
 
-    new_user = User(email=user.email, hashed_password=hash_password(user.password))
+    new_user = User(id=user.userId, email=user.email, hashed_password=hash_password(user.password))
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
