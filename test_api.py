@@ -2,11 +2,15 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
+import tempfile
+
+# Set testing mode before importing main
+os.environ["TESTING"] = "1"
+
 from main import app
 from models import Base
 from api import get_db
-import os
-import tempfile
 
 # Use a temporary file for testing database
 temp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)

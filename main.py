@@ -3,12 +3,15 @@ import api
 from models import Base
 from db import engine
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 def init():
     Base.metadata.create_all(bind=engine)
 
 
-init()
+# Only initialize database if not in testing mode
+if os.getenv("TESTING") != "1":
+    init()
 
 app = FastAPI(title="FRITIME Auth Service")
 
