@@ -356,19 +356,88 @@ def test_list_friends(client):
         "name": "Friend 2"
     })
     
-    # List friends
+    # List friends (now returns paginated response)
     response = client.get("/auth/users/300/friends")
     assert response.status_code == 200
-    friends = response.json()
-    assert len(friends) == 2
-    assert any(f["friend_id"] == 301 and f["name"] == "Friend 1" for f in friends)
-    assert any(f["friend_id"] == 302 and f["name"] == "Friend 2" for f in friends)
+    data = response.json()
+    assert "items" in data
+    assert "total" in data
+    assert "skip" in data
+    assert "limit" in data
+    assert data["total"] == 2
+    assert len(data["items"]) == 2
+    assert any(f["friend_id"] == 301 and f["name"] == "Friend 1" for f in data["items"])
+    assert any(f["friend_id"] == 302 and f["name"] == "Friend 2" for f in data["items"])
 
 
 def test_list_friends_nonexistent_user(client):
     """Test listing friends for nonexistent user"""
     response = client.get("/auth/users/999/friends")
     assert response.status_code == 404
+
+
+def test_list_friends_pagination(client):
+    """Test friends pagination with skip and limit"""
+    # Register users
+    client.post("/auth/users", json={"userId": 400, "email": "user400@example.com", "password": "pass123"})
+    for i in range(1, 6):  # Create 5 friends
+        client.post("/auth/users", json={"userId": 400 + i, "email": f"user{400 + i}@example.com", "password": "pass123"})
+        client.post("/auth/users/400/friends", json={"friend_id": 400 + i, "name": f"Friend {i}"})
+    
+    # Test first page
+    response = client.get("/auth/users/400/friends?skip=0&limit=2")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 5
+    assert len(data["items"]) == 2
+    assert data["skip"] == 0
+    assert data["limit"] == 2
+    
+    # Test second page
+    response = client.get("/auth/users/400/friends?skip=2&limit=2")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 5
+    assert len(data["items"]) == 2
+    assert data["skip"] == 2
+    
+    # Test last page
+    response = client.get("/auth/users/400/friends?skip=4&limit=2")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 5
+    assert len(data["items"]) == 1  # Only 1 item left
+    assert data["skip"] == 4
+
+
+def test_list_friends_pagination_empty(client):
+    """Test pagination with user that has no friends"""
+    client.post("/auth/users", json={"userId": 500, "email": "user500@example.com", "password": "pass123"})
+    
+    response = client.get("/auth/users/500/friends")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 0
+    assert len(data["items"]) == 0
+    assert data["skip"] == 0
+    assert data["limit"] == 10  # Default limit
+
+
+def test_list_friends_pagination_custom_limit(client):
+    """Test pagination with custom limit"""
+    # Register users
+    client.post("/auth/users", json={"userId": 600, "email": "user600@example.com", "password": "pass123"})
+    for i in range(1, 4):  # Create 3 friends
+        client.post("/auth/users", json={"userId": 600 + i, "email": f"user{600 + i}@example.com", "password": "pass123"})
+        client.post("/auth/users/600/friends", json={"friend_id": 600 + i, "name": f"Friend {i}"})
+    
+    # Test with custom limit
+    response = client.get("/auth/users/600/friends?limit=1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 3
+    assert len(data["items"]) == 1
+    assert data["limit"] == 1
 
 
 # Cleanup function to remove temporary database file
