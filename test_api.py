@@ -60,7 +60,7 @@ def test_register_new_user(client):
         "email": "test@example.com",
         "password": "testpassword123"
     }
-    response = client.post("/auth/register", json=user_data)
+    response = client.post("/auth/users", json=user_data)
     assert response.status_code == 200
     data = response.json()
     assert "id" in data
@@ -75,11 +75,11 @@ def test_register_duplicate_user(client):
         "password": "testpassword123"
     }
     # Register first time
-    response1 = client.post("/auth/register", json=user_data)
+    response1 = client.post("/auth/users", json=user_data)
     assert response1.status_code == 200
     
     # Try to register again
-    response2 = client.post("/auth/register", json=user_data)
+    response2 = client.post("/auth/users", json=user_data)
     assert response2.status_code == 400
     assert "already exists" in response2.json()["detail"].lower()
 
@@ -92,7 +92,7 @@ def test_register_duplicate_user_id(client):
         "email": "user1@example.com",
         "password": "testpassword123"
     }
-    response1 = client.post("/auth/register", json=user_data1)
+    response1 = client.post("/auth/users", json=user_data1)
     assert response1.status_code == 200
     
     # Try to register another user with same userId but different email
@@ -101,7 +101,7 @@ def test_register_duplicate_user_id(client):
         "email": "user2@example.com",
         "password": "testpassword456"
     }
-    response2 = client.post("/auth/register", json=user_data2)
+    response2 = client.post("/auth/users", json=user_data2)
     assert response2.status_code == 400
     assert "already exists" in response2.json()["detail"].lower()
 
@@ -113,7 +113,7 @@ def test_register_invalid_email(client):
         "email": "not-an-email",
         "password": "testpassword123"
     }
-    response = client.post("/auth/register", json=user_data)
+    response = client.post("/auth/users", json=user_data)
     assert response.status_code == 422  # Validation error
 
 
@@ -125,7 +125,7 @@ def test_login_success(client):
         "email": "login@example.com",
         "password": "testpassword123"
     }
-    client.post("/auth/register", json=user_data)
+    client.post("/auth/users", json=user_data)
     
     # Now try to login
     login_data = {
@@ -147,7 +147,7 @@ def test_login_wrong_password(client):
         "email": "wrongpw@example.com",
         "password": "correctpassword"
     }
-    client.post("/auth/register", json=user_data)
+    client.post("/auth/users", json=user_data)
     
     # Try to login with wrong password
     login_data = {
@@ -177,7 +177,7 @@ def test_me_endpoint_with_valid_token(client):
         "email": "me@example.com",
         "password": "testpassword123"
     }
-    client.post("/auth/register", json=user_data)
+    client.post("/auth/users", json=user_data)
     
     login_data = {
         "username": user_data["email"],
@@ -187,7 +187,7 @@ def test_me_endpoint_with_valid_token(client):
     token = login_response.json()["access_token"]
     
     # Access /me endpoint
-    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    response = client.get("/auth/users/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     data = response.json()
     assert "sub" in data
@@ -196,13 +196,13 @@ def test_me_endpoint_with_valid_token(client):
 
 def test_me_endpoint_without_token(client):
     """Test /me endpoint without authentication"""
-    response = client.get("/auth/me")
+    response = client.get("/auth/users/me")
     assert response.status_code == 401
 
 
 def test_me_endpoint_with_invalid_token(client):
     """Test /me endpoint with an invalid token"""
-    response = client.get("/auth/me", headers={"Authorization": "Bearer invalid_token"})
+    response = client.get("/auth/users/me", headers={"Authorization": "Bearer invalid_token"})
     assert response.status_code == 401
 
 
@@ -214,11 +214,11 @@ def test_get_user_by_id(client):
         "email": "getuser@example.com",
         "password": "testpassword123"
     }
-    register_response = client.post("/auth/register", json=user_data)
+    register_response = client.post("/auth/users", json=user_data)
     user_id = register_response.json()["id"]
     
     # Get user by ID
-    response = client.get(f"/auth/{user_id}")
+    response = client.get(f"/auth/users/{user_id}")
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == user_id
@@ -228,7 +228,7 @@ def test_get_user_by_id(client):
 
 def test_get_nonexistent_user(client):
     """Test getting a non-existent user"""
-    response = client.get("/auth/99999")
+    response = client.get("/auth/users/99999")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -244,7 +244,7 @@ def test_password_hashing(client):
         "email": "hash@example.com",
         "password": "mypassword123"
     }
-    client.post("/auth/register", json=user_data)
+    client.post("/auth/users", json=user_data)
     
     # Verify password is hashed in database
     db = next(override_get_db())
@@ -253,6 +253,127 @@ def test_password_hashing(client):
     assert user.hashed_password != user_data["password"]
     assert len(user.hashed_password) > 50  # Bcrypt hashes are long
     db.close()
+
+
+def test_add_friend(client):
+    """Test adding a friend"""
+    # Register two users
+    user1_data = {
+        "userId": 100,
+        "email": "user1@example.com",
+        "password": "password123"
+    }
+    user2_data = {
+        "userId": 101,
+        "email": "user2@example.com",
+        "password": "password123"
+    }
+    client.post("/auth/users", json=user1_data)
+    client.post("/auth/users", json=user2_data)
+    
+    # Add friend
+    friend_data = {
+        "user_id": 100,  # This will be ignored, path param takes precedence
+        "friend_id": 101,
+        "name": "Friend Name"
+    }
+    response = client.post("/auth/users/100/friends", json=friend_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user_id"] == 100
+    assert data["friend_id"] == 101
+    assert data["name"] == "Friend Name"
+
+
+def test_add_friend_nonexistent_user(client):
+    """Test adding a friend with nonexistent user"""
+    friend_data = {
+        "user_id": 999,
+        "friend_id": 998,
+        "name": "Friend Name"
+    }
+    response = client.post("/auth/users/999/friends", json=friend_data)
+    assert response.status_code == 404
+
+
+def test_add_duplicate_friend(client):
+    """Test adding a friend that already exists"""
+    # Register two users
+    user1_data = {
+        "userId": 200,
+        "email": "user200@example.com",
+        "password": "password123"
+    }
+    user2_data = {
+        "userId": 201,
+        "email": "user201@example.com",
+        "password": "password123"
+    }
+    client.post("/auth/users", json=user1_data)
+    client.post("/auth/users", json=user2_data)
+    
+    # Add friend first time
+    friend_data = {
+        "user_id": 200,
+        "friend_id": 201,
+        "name": "Friend Name"
+    }
+    response1 = client.post("/auth/users/200/friends", json=friend_data)
+    assert response1.status_code == 200
+    
+    # Try to add again
+    response2 = client.post("/auth/users/200/friends", json=friend_data)
+    assert response2.status_code == 400
+    assert "already exists" in response2.json()["detail"].lower()
+
+
+def test_list_friends(client):
+    """Test listing friends"""
+    # Register users
+    user1_data = {
+        "userId": 300,
+        "email": "user300@example.com",
+        "password": "password123"
+    }
+    user2_data = {
+        "userId": 301,
+        "email": "user301@example.com",
+        "password": "password123"
+    }
+    user3_data = {
+        "userId": 302,
+        "email": "user302@example.com",
+        "password": "password123"
+    }
+    client.post("/auth/users", json=user1_data)
+    client.post("/auth/users", json=user2_data)
+    client.post("/auth/users", json=user3_data)
+    
+    # Add friends
+    client.post("/auth/users/300/friends", json={
+        "user_id": 300,
+        "friend_id": 301,
+        "name": "Friend 1"
+    })
+    client.post("/auth/users/300/friends", json={
+        "user_id": 300,
+        "friend_id": 302,
+        "name": "Friend 2"
+    })
+    
+    # List friends
+    response = client.get("/auth/users/300/friends")
+    assert response.status_code == 200
+    friends = response.json()
+    assert len(friends) == 2
+    assert any(f["friend_id"] == 301 and f["name"] == "Friend 1" for f in friends)
+    assert any(f["friend_id"] == 302 and f["name"] == "Friend 2" for f in friends)
+
+
+def test_list_friends_nonexistent_user(client):
+    """Test listing friends for nonexistent user"""
+    response = client.get("/auth/users/999/friends")
+    assert response.status_code == 404
 
 
 # Cleanup function to remove temporary database file

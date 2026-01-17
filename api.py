@@ -29,8 +29,8 @@ def health():
     return {"status": "ok"}
 
 
-@router.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
+@router.post("/users")
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
     # Check if email already exists
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(400, "User already exists")
@@ -56,9 +56,9 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     token = create_access_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
 
-@router.post("/friend")
-def register(rq:FriendReq, db: Session = Depends(get_db)):
-    user_id = rq.user_id
+@router.post("/users/{user_id}/friends")
+def add_friend(user_id: int, rq:FriendReq, db: Session = Depends(get_db)):
+    # user_id comes from path parameter, override any value from request body
     friend_id = rq.friend_id
     name = rq.name
     user = db.query(User).filter(User.id == user_id).first()
@@ -73,7 +73,7 @@ def register(rq:FriendReq, db: Session = Depends(get_db)):
     db.commit()
     return {"user_id": user_id, "friend_id":friend_id, "name":name}
 
-@router.get("/{user_id}/friends")
+@router.get("/users/{user_id}/friends")
 def list_friends(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -86,7 +86,7 @@ def list_friends(user_id: int, db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/me")
+@router.get("/users/me")
 def me(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
     if not payload:
@@ -94,7 +94,7 @@ def me(token: str = Depends(oauth2_scheme)):
     return payload
 
 
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).get(user_id)
     if not user:
