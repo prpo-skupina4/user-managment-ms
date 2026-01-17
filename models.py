@@ -1,5 +1,5 @@
-from sqlalchemy import String, Integer, Boolean, ForeignKey, select
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, Session, object_session
+from sqlalchemy import String, Integer, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, object_session
 from pydantic import constr
 
 
@@ -21,7 +21,6 @@ class User(Base):
         session = object_session(self)
         if session is None:
             return []
-        from models import Friends
         friend_records = session.query(Friends).filter(Friends.user_id == self.id).all()
         return [f.friend_id for f in friend_records]
 
