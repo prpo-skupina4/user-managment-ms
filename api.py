@@ -75,6 +75,14 @@ def add_friend(user_id: int, rq:FriendReq, db: Session = Depends(get_db)):
 
 @router.get("/users/{user_id}/friends")
 def list_friends(user_id: int, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    # Validate pagination parameters
+    if skip < 0:
+        raise HTTPException(400, "skip must be non-negative")
+    if limit < 1:
+        raise HTTPException(400, "limit must be at least 1")
+    if limit > 100:
+        raise HTTPException(400, "limit cannot exceed 100")
+    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(404)

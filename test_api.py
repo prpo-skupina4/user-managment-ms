@@ -440,6 +440,30 @@ def test_list_friends_pagination_custom_limit(client):
     assert data["limit"] == 1
 
 
+def test_list_friends_pagination_invalid_skip(client):
+    """Test pagination with invalid skip parameter"""
+    client.post("/auth/users", json={"userId": 700, "email": "user700@example.com", "password": "pass123"})
+    
+    response = client.get("/auth/users/700/friends?skip=-1")
+    assert response.status_code == 400
+    assert "skip" in response.json()["detail"].lower()
+
+
+def test_list_friends_pagination_invalid_limit(client):
+    """Test pagination with invalid limit parameter"""
+    client.post("/auth/users", json={"userId": 800, "email": "user800@example.com", "password": "pass123"})
+    
+    # Test limit < 1
+    response = client.get("/auth/users/800/friends?limit=0")
+    assert response.status_code == 400
+    assert "limit" in response.json()["detail"].lower()
+    
+    # Test limit > 100
+    response = client.get("/auth/users/800/friends?limit=101")
+    assert response.status_code == 400
+    assert "limit" in response.json()["detail"].lower()
+
+
 # Cleanup function to remove temporary database file
 def teardown_module():
     """Clean up temporary database file after all tests"""
